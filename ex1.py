@@ -95,7 +95,7 @@ class MedicalProblem(search.Problem):
         scores = [self.count_sick(state),
                      self.count_recovery(state, 1),
                      self.count_recovery(state, 2),
-                     self.count_immune(state)
+                     self.count_immune(state),
                      self.count_quarantined(state, 1),
                      self.count_quarantined(state, 2),
                      self.count_endangered(state)]
@@ -145,5 +145,5 @@ def state_to_tuple(state):
     return tuple(tuple(row) for row in state)
 
 
-def create_medical_problem(game):
-    return MedicalProblem(game)
+def create_medical_problem(game, weights): # TODO Delete weights
+    return MedicalProblem(game, weights)
