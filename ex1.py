@@ -62,12 +62,12 @@ class MedicalProblem(search.Problem):
                             state[k][l] = ('S', 3)
 
         for i, row in enumerate(state):
-            for j, value in enumerate(row):
-                if value[0] in ['S', 'Q']:
-                    if value[1] == 1:
+            for j, (value, days) in enumerate(row):
+                if value in ['S', 'Q']:
+                    if days == 1:
                         state[i][j] = ('H', 0)
                     else:
-                        state[i][j] = (value[0], value[1]-1)
+                        state[i][j] = (value, days - 1)
 
         return state_to_tuple(state)
 
@@ -90,13 +90,18 @@ class MedicalProblem(search.Problem):
         """ This is the heuristic. It gets a node (not a state,
         state can be accessed via node.state)
         and returns a goal distance estimate"""
-        score = 0
+        h_score = 0
         state = node.state
-        functions = [self.count_sick(state),
+        scores = [self.count_sick(state),
                      self.count_recovery(state, 1),
                      self.count_recovery(state, 2),
-                     ]
-        return self.count_sick(node.state)
+                     self.count_immune(state)
+                     self.count_quarantined(state, 1),
+                     self.count_quarantined(state, 2),
+                     self.count_endangered(state)]
+        for score, weight in zip(scores, self.weights):
+            h_score += scores * weight
+        return h_score
 
     def generic_count(self, state, counter_func):
         score = 0
