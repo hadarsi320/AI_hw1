@@ -7,16 +7,18 @@ from search import *
 
 class Tournament:
 
-    def __init__(self, players, timeout, n_rounds):
+    def __init__(self, players, problem_params, timeout, n_rounds, n_problems):
         self.players = players
+        self.problem_params = problem_params
         self.timeout = timeout
         self.n_rounds = n_rounds
+        self.n_problems = n_problems
 
     def run(self):
         for i in range(self.n_rounds):
             print(f"Starting Round {i}")
-            problems = [self.generate_problem(params*) for i in range(n_problems)]
-            results = [self.solve_round_problems(problems, player) for player in self.players]
+            problems = [self.generate_problem(self.problem_params*) for p in range(self.n_problems)]
+            results = [self.solve_round_problems(problems, player, i) for player in self.players]
             self.players = self.generate_next_round_players(results)
 
     def solve_round_problems(self, problems, player, player_num):
