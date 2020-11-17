@@ -8,7 +8,7 @@ ids = ["318792827", "321659187"]
 class MedicalProblem(search.Problem):
     """This class implements a medical problem according to problem description file"""
 
-    def __init__(self, initial, weights): # TODO delete weights
+    def __init__(self, initial, weights):  # TODO delete weights
         """Don't forget to implement the goal test
         You should change the initial to your own representation.
         search.Problem.__init__(self, initial) creates the root node"""
@@ -64,7 +64,7 @@ class MedicalProblem(search.Problem):
         for i, row in enumerate(state):
             for j, (value, days) in enumerate(row):
                 if value in ['S', 'Q']:
-                    if days == 1:
+                    if days == 0:
                         state[i][j] = ('H', 0)
                     else:
                         state[i][j] = (value, days - 1)
@@ -72,7 +72,7 @@ class MedicalProblem(search.Problem):
         return state_to_tuple(state)
 
     def neighbors(self, i, j):
-        return [val for val in [(i-1, j), (i+1, j), (i, j-1), (i, j+1)] if self.in_board(*val)]
+        return [val for val in [(i - 1, j), (i + 1, j), (i, j - 1), (i, j + 1)] if self.in_board(*val)]
 
     def in_board(self, i, j):
         return 0 <= i < self.len and 0 <= j < self.width
@@ -93,20 +93,20 @@ class MedicalProblem(search.Problem):
         h_score = 0
         state = node.state
         scores = [self.count_sick(state),
-                     self.count_recovery(state, 1),
-                     self.count_recovery(state, 2),
-                     self.count_immune(state),
-                     self.count_quarantined(state, 1),
-                     self.count_quarantined(state, 2),
-                     self.count_endangered(state)]
+                  self.count_recovery(state, 1),
+                  self.count_recovery(state, 2),
+                  self.count_immune(state),
+                  self.count_quarantined(state, 1),
+                  self.count_quarantined(state, 2),
+                  self.count_endangered(state)]
         for score, weight in zip(scores, self.weights):
-            h_score += scores * weight
+            h_score += score * weight
         return h_score
 
     def generic_count(self, state, counter_func):
         score = 0
-        for i in self.len:
-            for j in self.width:
+        for i in range(self.len):
+            for j in range(self.width):
                 score += counter_func(i, j, state)
         return score
 
@@ -145,5 +145,5 @@ def state_to_tuple(state):
     return tuple(tuple(row) for row in state)
 
 
-def create_medical_problem(game, weights): # TODO Delete weights
+def create_medical_problem(game, weights):  # TODO Delete weights
     return MedicalProblem(game, weights)

@@ -56,7 +56,7 @@ def solve_problems(problems):
     solved = 0
     for problem in problems:
         try:
-            p = ex1.create_medical_problem(problem)
+            p = ex1.create_medical_problem(problem, weights=[1, 0, 0, 0, 0, 0, 0])
         except Exception as e:
             print("Error creating problem: ", e)
             return None
