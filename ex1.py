@@ -59,7 +59,7 @@ class MedicalProblem(search.Problem):
                 if value[0] == 'S':
                     for k, l in self.neighbors(i, j):
                         if state[k][l][0] == 'H':
-                            state[k][l] = ('S', 3)
+                            state[k][l] = ('S', 4)  # 4 since this is going to be demoted immediately
 
         for i, row in enumerate(state):
             for j, (value, days) in enumerate(row):
