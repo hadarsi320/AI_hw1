@@ -4,11 +4,20 @@ import search
 
 ids = ["318792827", "321659187"]
 
+NUM_MEASURES = 7
+SICK_TOTAL = 0
+SICK_1 = 1
+SICK_2 = 2
+IMMUNE = 3
+QUARANTINED_1 = 4
+QUARANTINED_2 = 5
+ENDANGERED = 6
+
 
 class MedicalProblem(search.Problem):
     """This class implements a medical problem according to problem description file"""
 
-    def __init__(self, initial, weights): # TODO delete weights
+    def __init__(self, initial):  # TODO delete weights
         """Don't forget to implement the goal test
         You should change the initial to your own representation.
         search.Problem.__init__(self, initial) creates the root node"""
@@ -19,7 +28,7 @@ class MedicalProblem(search.Problem):
                                for line in initial['map']])
         self.len = len(initial_state)
         self.width = len(initial_state[0])
-        self.weights = weights
+        self.weights = [1, 1, 1.5, -1, -0.5, -0.75, 1]
         search.Problem.__init__(self, initial_state)
 
     def actions(self, state):
@@ -34,9 +43,16 @@ class MedicalProblem(search.Problem):
                     sick.append(('quarantine', (i, j)))
                 if val[0] == 'H':
                     healthy.append(('vaccinate', (i, j)))
-
-        actions = [sick_perm + healthy_perm for sick_perm in itertools.combinations(sick, self.police)
-                   for healthy_perm in itertools.combinations(healthy, self.medics)]
+        if len(sick) < self.police:
+            sick_permutations = (tuple(sick),)
+        else:
+            sick_permutations = list(itertools.combinations(sick, self.police))
+        if len(healthy) < self.medics:
+            healthy_permutations = (tuple(healthy),)
+        else:
+            healthy_permutations = list(itertools.combinations(healthy, self.medics))
+        actions = [sick_perm + healthy_perm for sick_perm in sick_permutations
+                   for healthy_perm in healthy_permutations]
         return actions
 
     def result(self, state, actions):
@@ -72,7 +88,7 @@ class MedicalProblem(search.Problem):
         return state_to_tuple(state)
 
     def neighbors(self, i, j):
-        return [val for val in [(i-1, j), (i+1, j), (i, j-1), (i, j+1)] if self.in_board(*val)]
+        return [val for val in [(i - 1, j), (i + 1, j), (i, j - 1), (i, j + 1)] if self.in_board(*val)]
 
     def in_board(self, i, j):
         return 0 <= i < self.len and 0 <= j < self.width
@@ -92,46 +108,57 @@ class MedicalProblem(search.Problem):
         and returns a goal distance estimate"""
         h_score = 0
         state = node.state
-        scores = [self.count_sick(state),
-                     self.count_recovery(state, 1),
-                     self.count_recovery(state, 2),
-                     self.count_immune(state),
-                     self.count_quarantined(state, 1),
-                     self.count_quarantined(state, 2),
-                     self.count_endangered(state)]
-        for score, weight in zip(scores, self.weights):
-            h_score += scores * weight
+        counts = self.count_measures(state)
+        for count, weight in zip(counts, self.weights):
+            h_score += count * weight
         return h_score
 
-    def generic_count(self, state, counter_func):
-        score = 0
-        for i in self.len:
-            for j in self.width:
-                score += counter_func(i, j, state)
-        return score
+    def count_measures(self, state):
+        counts = [0] * NUM_MEASURES
+        for i in range(self.len):
+            for j in range(self.width):
+                value, day = state[i][j]
+                if value == 'H':
+                    if self.is_endangered(state, i, j):
+                        counts[ENDANGERED] += 1
+                elif value == 'U':
+                    continue
+                elif value == 'S':
+                    counts[SICK_TOTAL] += 1
+                    if day == 1:
+                        counts[SICK_1] += 1
+                    elif day == 2:
+                        counts[SICK_2] += 1
+                elif value == 'I':
+                    counts[IMMUNE] += 1
+                elif value == 'Q':
+                    if day == 1:
+                        counts[QUARANTINED_1] += 1
+                    elif day == 2:
+                        counts[QUARANTINED_2] += 1
+        return counts
 
-    def count_sick(self, state):
-        return self.generic_count(state, lambda i, j, state: state[i][j][0] == 'S')
+    @staticmethod
+    def is_healthy(self, val):
+        return val[0] == 'H'
 
-    def count_recovery(self, state, days):
-        return self.generic_count(state, lambda i, j, state: state[i][j] == ('S', days))
+    @staticmethod
+    def is_sick(self, val):
+        return val[0] == 'S'
 
-    def count_immune(self, state):
-        return self.generic_count(state, lambda i, j, state: state[i][j][0] == 'I')
+    def is_immune(self, val):
+        return val[0] == 'I'
 
-    def count_quarantined(self, state, days):
-        return self.generic_count(state, lambda i, j, state: state[i][j] == ('Q', days))
+    def is_quarantined(self, val):
+        return val[0] == 'Q'
 
-    def count_endangered(self, state):
+    def is_endangered(self, state, i, j):
 
-        def is_endangered(i, j, state):
-            if state[i][j][0] == 'H':
-                for k, l in self.neighbors(i, j):
-                    if state[k][l][0] == 'S':
-                        return 1
-            return 0
-
-        return self.generic_count(state, is_endangered)
+        if state[i][j][0] == 'H':
+            for k, l in self.neighbors(i, j):
+                if state[k][l][0] == 'S':
+                    return True
+        return False
 
     """Feel free to add your own functions
     (-2, -2, None) means there was a timeout"""
@@ -145,5 +172,5 @@ def state_to_tuple(state):
     return tuple(tuple(row) for row in state)
 
 
-def create_medical_problem(game, weights): # TODO Delete weights
-    return MedicalProblem(game, weights)
+def create_medical_problem(game):  # TODO Delete weights
+    return MedicalProblem(game)
