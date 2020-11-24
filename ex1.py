@@ -4,20 +4,21 @@ import search
 
 ids = ["318792827", "321659187"]
 
-NUM_MEASURES = 7
+NUM_MEASURES = 8
 SICK_TOTAL = 0
 SICK_1 = 1
 SICK_2 = 2
-IMMUNE = 3
-QUARANTINED_1 = 4
-QUARANTINED_2 = 5
-ENDANGERED = 6
+SICK_3 = 3
+IMMUNE = 4
+QUARANTINED_1 = 5
+QUARANTINED_2 = 6
+ENDANGERED = 7
 
 
 class MedicalProblem(search.Problem):
     """This class implements a medical problem according to problem description file"""
 
-    def __init__(self, initial):  # TODO delete weights
+    def __init__(self, initial, weights=(1, 1, 1.5, -1, -0.5, -0.75, 1)):  # TODO delete weights
         """Don't forget to implement the goal test
         You should change the initial to your own representation.
         search.Problem.__init__(self, initial) creates the root node"""
@@ -28,7 +29,7 @@ class MedicalProblem(search.Problem):
                                for line in initial['map']])
         self.len = len(initial_state)
         self.width = len(initial_state[0])
-        self.weights = [1, 1, 1.5, -1, -0.5, -0.75, 1]
+        self.weights = weights
         search.Problem.__init__(self, initial_state)
 
     def actions(self, state):
@@ -75,12 +76,12 @@ class MedicalProblem(search.Problem):
                 if value[0] == 'S':
                     for k, l in self.neighbors(i, j):
                         if state[k][l][0] == 'H':
-                            state[k][l] = ('S', 3)
+                            state[k][l] = ('S', 4)  # 4 since this is going to be demoted immediately
 
         for i, row in enumerate(state):
             for j, (value, days) in enumerate(row):
                 if value in ['S', 'Q']:
-                    if days == 1:
+                    if days == 0:
                         state[i][j] = ('H', 0)
                     else:
                         state[i][j] = (value, days - 1)
@@ -118,6 +119,16 @@ class MedicalProblem(search.Problem):
         for i in range(self.len):
             for j in range(self.width):
                 value, day = state[i][j]
+
+                # counts[SICK_TOTAL] += value == 'S'
+                # counts[SICK_1] += (value, day) == ('S', 1)
+                # counts[SICK_2] += (value, day) == ('S', 2)
+                # counts[SICK_3] += (value, day) == ('S', 3)
+                # counts[IMMUNE] += value == 'I'
+                # counts[QUARANTINED_1] += (value, day) == ('Q', 1)
+                # counts[QUARANTINED_2] += (value, day) == ('Q', 2)
+                # counts[ENDANGERED] = value == 'H' and self.is_endangered(state, i, j)
+
                 if value == 'H':
                     if self.is_endangered(state, i, j):
                         counts[ENDANGERED] += 1
@@ -129,6 +140,8 @@ class MedicalProblem(search.Problem):
                         counts[SICK_1] += 1
                     elif day == 2:
                         counts[SICK_2] += 1
+                    elif day == 3:
+                        counts[SICK_3] += 1
                 elif value == 'I':
                     counts[IMMUNE] += 1
                 elif value == 'Q':
@@ -172,5 +185,5 @@ def state_to_tuple(state):
     return tuple(tuple(row) for row in state)
 
 
-def create_medical_problem(game):  # TODO Delete weights
-    return MedicalProblem(game)
+def create_medical_problem(game, weights=(1, 1, 1.5, -1, -0.5, -0.75, 1)):  # TODO Delete weights
+    return MedicalProblem(game, weights)
