@@ -42,8 +42,9 @@ class MedicalProblem(search.Problem):
             for j, val in enumerate(line):
                 if val[0] == 'S':
                     sick.append(('quarantine', (i, j)))
-                if val[0] == 'H':
+                elif val[0] == 'H':
                     healthy.append(('vaccinate', (i, j)))
+
         if len(sick) < self.police:
             sick_permutations = (tuple(sick),)
         else:
@@ -64,11 +65,9 @@ class MedicalProblem(search.Problem):
 
         for action, (i, j) in actions:
             if action == 'quarantine':
-                assert state[i][j][0] == 'S'
                 state[i][j] = ('Q', 2)
 
             elif action == 'vaccinate':
-                assert state[i][j][0] == 'H'
                 state[i][j] = ('I', 0)
 
         for i, row in enumerate(state):
@@ -120,35 +119,35 @@ class MedicalProblem(search.Problem):
             for j in range(self.width):
                 value, day = state[i][j]
 
-                # counts[SICK_TOTAL] += value == 'S'
-                # counts[SICK_1] += (value, day) == ('S', 1)
-                # counts[SICK_2] += (value, day) == ('S', 2)
-                # counts[SICK_3] += (value, day) == ('S', 3)
-                # counts[IMMUNE] += value == 'I'
-                # counts[QUARANTINED_1] += (value, day) == ('Q', 1)
-                # counts[QUARANTINED_2] += (value, day) == ('Q', 2)
-                # counts[ENDANGERED] = value == 'H' and self.is_endangered(state, i, j)
+                counts[SICK_TOTAL] += value == 'S'
+                counts[SICK_1] += (value, day) == ('S', 1)
+                counts[SICK_2] += (value, day) == ('S', 2)
+                counts[SICK_3] += (value, day) == ('S', 3)
+                counts[IMMUNE] += value == 'I'
+                counts[QUARANTINED_1] += (value, day) == ('Q', 1)
+                counts[QUARANTINED_2] += (value, day) == ('Q', 2)
+                counts[ENDANGERED] = value == 'H' and self.is_endangered(state, i, j)
 
-                if value == 'H':
-                    if self.is_endangered(state, i, j):
-                        counts[ENDANGERED] += 1
-                elif value == 'U':
-                    continue
-                elif value == 'S':
-                    counts[SICK_TOTAL] += 1
-                    if day == 1:
-                        counts[SICK_1] += 1
-                    elif day == 2:
-                        counts[SICK_2] += 1
-                    elif day == 3:
-                        counts[SICK_3] += 1
-                elif value == 'I':
-                    counts[IMMUNE] += 1
-                elif value == 'Q':
-                    if day == 1:
-                        counts[QUARANTINED_1] += 1
-                    elif day == 2:
-                        counts[QUARANTINED_2] += 1
+                # if value == 'H':
+                #     if self.is_endangered(state, i, j):
+                #         counts[ENDANGERED] += 1
+                # elif value == 'U':
+                #     continue
+                # elif value == 'S':
+                #     counts[SICK_TOTAL] += 1
+                #     if day == 1:
+                #         counts[SICK_1] += 1
+                #     elif day == 2:
+                #         counts[SICK_2] += 1
+                #     elif day == 3:
+                #         counts[SICK_3] += 1
+                # elif value == 'I':
+                #     counts[IMMUNE] += 1
+                # elif value == 'Q':
+                #     if day == 1:
+                #         counts[QUARANTINED_1] += 1
+                #     elif day == 2:
+                #         counts[QUARANTINED_2] += 1
         return counts
 
     @staticmethod
