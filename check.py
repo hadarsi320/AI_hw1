@@ -1,6 +1,13 @@
+import multiprocessing
+import sys
+
+import numpy as np
+
 import ex1
 import search
 import time
+
+from ex1 import file_lock, print_lock
 
 
 def timeout_exec(func, args=(), kwargs={}, timeout_duration=10, default=None):
@@ -52,12 +59,13 @@ def check_problem(p, search_method, timeout):
         return s
 
 
-def solve_problems(problems):
+def solve_problems(problems, weights):
     solved = 0
     for i, problem in enumerate(problems):
         try:
-            p = ex1.create_medical_problem(problem, weights=[1, 0, 0, 0, 0, 0, 0])
-            # p = ex1.create_medical_problem(problem, weights=[1, 1, 1, 1, 1, 1, 1])
+            # weights = [0.3214811807174396, 0.7931524209752023, 0.10004562939257255, 0.3748156568695349,
+            #            0.07650427762183343, 0.1639237155039427, 0.6766203622831798, 0.23211957815601592]
+            p = ex1.create_medical_problem(problem, weights=weights)
         except Exception as e:
             print("Error creating problem: ", e)
             return None
@@ -69,33 +77,43 @@ def solve_problems(problems):
                 solved = solved + 1
 
 
-def find_optimal_weights(problems, output_file, total_runs):
-    import numpy as np
+def find_optimal_weights(problems, total_runs):
     for i in range(total_runs):
-        weights = np.random.random(7)
-        results = []
-        run_result = None
+        evaluate_weights(problems, i)
 
-        print(f'Running run {i+1} with weights:', *weights)
-        for problem in problems:
-            try:
-                p = ex1.create_medical_problem(problem, weights=weights)
-                timeout = 60
-                output = check_problem(p, (lambda p: search.best_first_graph_search(p, p.h)), timeout)
-            except:
-                run_result = 'ERROR'
-                print('error')
-                break
 
-            if output[0] == -2:
-                run_result = 'TIMEOUT'
-                print('timeout')
-                break
-            results.append(output[0])
-        if run_result is None:
-            run_result = np.average(results)
-        with open(output_file, 'a') as f:
-            f.write(', '.join([str(val) for val in weights]) + ' - ' + run_result + '\n')
+def evaluate_weights(problems, i):
+    weights = np.random.random(ex1.NUM_MEASURES)
+    # weights = np.insert(np.positive(np.random.normal(size=ex1.NUM_MEASURES-1)), 0, 1)
+    # weights[weights < 0] = -weights[weights < 0]
+
+    results = []
+    max_time = 0
+
+    for j, problem in enumerate(problems):
+        start = time.time()
+        try:
+            p = ex1.create_medical_problem(problem, weights=weights)
+            timeout = 60
+            output = check_problem(p, (lambda p: search.best_first_graph_search(p, p.h)), timeout)
+        except Exception:
+            print(f'run {i + 1:>2}: error in problem {j + 1:>2} weights:', *np.round(weights, 2))
+            return
+
+        if output[0] == -2:
+            print(f'run {i + 1:>2}: timeout in problem {j + 1:>2} after {round(time.time() - start)} seconds weights:',
+                  *np.round(weights, 2))
+            with open(f'results/{j + 1}', 'a') as f:
+                f.write(','.join([str(val) for val in weights]) + '\n')
+            return
+
+        results.append(output[0])
+        max_time = max(output[1], max_time)
+
+    print(f'run {i + 1:>2}: finished successfully weights:', *np.round(weights, 2))
+    run_result = np.average(results)
+    with open('results/done', 'a') as f:
+        f.write(', '.join([str(val) for val in weights]) + f' - {run_result} - {max_time}\n')
 
 
 def main():
@@ -289,9 +307,20 @@ def main():
         },
 
     ]
-    print(f'Total problems: {len(problems)}')
+
+    # problems = problems[-1:]
     # solve_problems(problems)
-    find_optimal_weights(problems, 'output_file.txt', 100)
+    # find_optimal_weights(problems, 100)
+    weights_list = []
+    time_left_list = []
+    with open('results/done') as f:
+        for i, line in enumerate(f):
+            weights_list.append([float(val) for val in line.split('-')[0].split(',')])
+            time_left_list.append(60 - float(line.split('-')[2]))
+
+    print(np.average(weights_list, axis=0, weights=time_left_list))
+    solve_problems(problems, np.average(weights_list, axis=0, weights=time_left_list))
+    # print(time_left_list)
 
 
 if __name__ == '__main__':
