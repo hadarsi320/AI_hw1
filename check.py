@@ -1,9 +1,6 @@
-import time
-
-import numpy as np
-
 import ex1
 import search
+import time
 
 
 def timeout_exec(func, args=(), kwargs={}, timeout_duration=10, default=None):
@@ -55,61 +52,20 @@ def check_problem(p, search_method, timeout):
         return s
 
 
-def solve_problems(problems, weights):
+def solve_problems(problems):
     solved = 0
-    for i, problem in enumerate(problems):
+    for problem in problems:
         try:
-            # weights = [0.3214811807174396, 0.7931524209752023, 0.10004562939257255, 0.3748156568695349,
-            #            0.07650427762183343, 0.1639237155039427, 0.6766203622831798, 0.23211957815601592]
-            p = ex1.create_medical_problem(problem, weights=weights)
+            p = ex1.create_medical_problem(problem)
         except Exception as e:
             print("Error creating problem: ", e)
             return None
         timeout = 60
         result = check_problem(p, (lambda p: search.best_first_graph_search(p, p.h)), timeout)
-        print(i + 1, "GBFS ", result)
+        print("GBFS ", result)
         if result[2] != None:
             if result[0] != -3:
                 solved = solved + 1
-
-
-def find_optimal_weights(problems, total_runs):
-    for i in range(total_runs):
-        evaluate_weights(problems, i)
-
-
-def evaluate_weights(problems, i):
-    weights = np.random.random(ex1.NUM_MEASURES)
-    # weights = np.insert(np.positive(np.random.normal(size=ex1.NUM_MEASURES-1)), 0, 1)
-    # weights[weights < 0] = -weights[weights < 0]
-
-    results = []
-    max_time = 0
-
-    for j, problem in enumerate(problems):
-        start = time.time()
-        try:
-            p = ex1.create_medical_problem(problem, weights=weights)
-            timeout = 60
-            output = check_problem(p, (lambda p: search.best_first_graph_search(p, p.h)), timeout)
-        except Exception:
-            print(f'run {i + 1:>2}: error in problem {j + 1:>2} weights:', *np.round(weights, 2))
-            return
-
-        if output[0] == -2:
-            print(f'run {i + 1:>2}: timeout in problem {j + 1:>2} after {round(time.time() - start)} seconds weights:',
-                  *np.round(weights, 2))
-            with open(f'results/{j + 1}', 'a') as f:
-                f.write(','.join([str(val) for val in weights]) + '\n')
-            return
-
-        results.append(output[0])
-        max_time = max(output[1], max_time)
-
-    print(f'run {i + 1:>2}: finished successfully weights:', *np.round(weights, 2))
-    run_result = np.average(results)
-    with open('results/done', 'a') as f:
-        f.write(', '.join([str(val) for val in weights]) + f' - {run_result} - {max_time}\n')
 
 
 def main():
@@ -303,22 +259,7 @@ def main():
         },
 
     ]
-
-    # problems = problems[-1:]
-    # solve_problems(problems)
-    # find_optimal_weights(problems, 100)
-    weights_list = []
-    with open('results/done') as f:
-        for i, line in enumerate(f):
-            weights_list.append([float(val) for val in line.split('-')[0].split(',')])
-
-    for i, weights in enumerate(weights_list):
-        print(i, weights)
-        # final_weights = np.round(weights, 5)
-        # print(*final_weights, sep=', ')
-        # print(np.linalg.norm(final_weights - weights))
-        solve_problems(problems, weights)
-        print('\n\n')
+    solve_problems(problems)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.random import geometric, choice
 from random import shuffle
 import pickle
 from ex1 import *
