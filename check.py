@@ -1,13 +1,9 @@
-import multiprocessing
-import sys
+import time
 
 import numpy as np
 
 import ex1
 import search
-import time
-
-from ex1 import file_lock, print_lock
 
 
 def timeout_exec(func, args=(), kwargs={}, timeout_duration=10, default=None):
@@ -312,15 +308,17 @@ def main():
     # solve_problems(problems)
     # find_optimal_weights(problems, 100)
     weights_list = []
-    time_left_list = []
     with open('results/done') as f:
         for i, line in enumerate(f):
             weights_list.append([float(val) for val in line.split('-')[0].split(',')])
-            time_left_list.append(60 - float(line.split('-')[2]))
 
-    print(np.average(weights_list, axis=0, weights=time_left_list))
-    solve_problems(problems, np.average(weights_list, axis=0, weights=time_left_list))
-    # print(time_left_list)
+    for i, weights in enumerate(weights_list):
+        print(i, weights)
+        # final_weights = np.round(weights, 5)
+        # print(*final_weights, sep=', ')
+        # print(np.linalg.norm(final_weights - weights))
+        solve_problems(problems, weights)
+        print('\n\n')
 
 
 if __name__ == '__main__':

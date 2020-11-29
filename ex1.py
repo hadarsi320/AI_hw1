@@ -13,12 +13,13 @@ IMMUNE = 4
 QUARANTINED_1 = 5
 QUARANTINED_2 = 6
 ENDANGERED = 7
-
+WEIGHTS = (0.9784128920597102, 0.3448961677553998, 0.37198598623470647, 0.9728597300324406, 0.2357129879381703,
+           0.34850306058598324, 0.6247811849752408, 0.06077653822142337 - 3.3333333333333335)
 
 class MedicalProblem(search.Problem):
     """This class implements a medical problem according to problem description file"""
 
-    def __init__(self, initial, weights=(1, 1, 1.5, -1, -0.5, -0.75, 1)):  # TODO delete weights
+    def __init__(self, initial, weights=WEIGHTS):  # TODO delete weights
         """Don't forget to implement the goal test
         You should change the initial to your own representation.
         search.Problem.__init__(self, initial) creates the root node"""
@@ -119,35 +120,26 @@ class MedicalProblem(search.Problem):
             for j in range(self.width):
                 value, day = state[i][j]
 
-                counts[SICK_TOTAL] += value == 'S'
-                counts[SICK_1] += (value, day) == ('S', 1)
-                counts[SICK_2] += (value, day) == ('S', 2)
-                counts[SICK_3] += (value, day) == ('S', 3)
-                counts[IMMUNE] += value == 'I'
-                counts[QUARANTINED_1] += (value, day) == ('Q', 1)
-                counts[QUARANTINED_2] += (value, day) == ('Q', 2)
-                counts[ENDANGERED] = value == 'H' and self.is_endangered(state, i, j)
-
-                # if value == 'H':
-                #     if self.is_endangered(state, i, j):
-                #         counts[ENDANGERED] += 1
-                # elif value == 'U':
-                #     continue
-                # elif value == 'S':
-                #     counts[SICK_TOTAL] += 1
-                #     if day == 1:
-                #         counts[SICK_1] += 1
-                #     elif day == 2:
-                #         counts[SICK_2] += 1
-                #     elif day == 3:
-                #         counts[SICK_3] += 1
-                # elif value == 'I':
-                #     counts[IMMUNE] += 1
-                # elif value == 'Q':
-                #     if day == 1:
-                #         counts[QUARANTINED_1] += 1
-                #     elif day == 2:
-                #         counts[QUARANTINED_2] += 1
+                if value == 'H':
+                    if self.is_endangered(state, i, j):
+                        counts[ENDANGERED] += 1
+                elif value == 'U':
+                    continue
+                elif value == 'S':
+                    counts[SICK_TOTAL] += 1
+                    if day == 1:
+                        counts[SICK_1] += 1
+                    elif day == 2:
+                        counts[SICK_2] += 1
+                    elif day == 3:
+                        counts[SICK_3] += 1
+                elif value == 'I':
+                    counts[IMMUNE] += 1
+                elif value == 'Q':
+                    if day == 1:
+                        counts[QUARANTINED_1] += 1
+                    elif day == 2:
+                        counts[QUARANTINED_2] += 1
         return counts
 
     @staticmethod
@@ -184,5 +176,5 @@ def state_to_tuple(state):
     return tuple(tuple(row) for row in state)
 
 
-def create_medical_problem(game, weights=(1, 1, 1.5, -1, -0.5, -0.75, 1)):  # TODO Delete weights
-    return MedicalProblem(game, weights)
+def create_medical_problem(game):  # TODO Delete weights
+    return MedicalProblem(game)
