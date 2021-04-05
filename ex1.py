@@ -13,8 +13,13 @@ IMMUNE = 4
 QUARANTINED_1 = 5
 QUARANTINED_2 = 6
 ENDANGERED = 7
+
+Q_action = 'quarantine'
+V_action = 'vaccinate'
+
 WEIGHTS = (0.9784128920597102, 0.3448961677553998, 0.37198598623470647, 0.9728597300324406, 0.2357129879381703,
            0.34850306058598324, 0.6247811849752408, 0.06077653822142337)
+
 
 class MedicalProblem(search.Problem):
     """This class implements a medical problem according to problem description file"""
@@ -40,21 +45,16 @@ class MedicalProblem(search.Problem):
         sick = []
         healthy = []
         for i, line in enumerate(state):
-            for j, val in enumerate(line):
-                if val[0] == 'S':
-                    sick.append(('quarantine', (i, j)))
-                elif val[0] == 'H':
-                    healthy.append(('vaccinate', (i, j)))
+            for j, (value, _) in enumerate(line):
+                if value == 'S':
+                    sick.append((Q_action, (i, j)))
+                elif value == 'H':
+                    healthy.append((V_action, (i, j)))
 
-        if len(sick) < self.police:
-            sick_permutations = (tuple(sick),)
-        else:
-            sick_permutations = list(itertools.combinations(sick, self.police))
-        if len(healthy) < self.medics:
-            healthy_permutations = (tuple(healthy),)
-        else:
-            healthy_permutations = list(itertools.combinations(healthy, self.medics))
-        actions = [sick_perm + healthy_perm for sick_perm in sick_permutations
+        sick_permutations = list(itertools.combinations(sick, min(self.police, len(sick))))
+        healthy_permutations = list(itertools.combinations(healthy, min(self.medics, len(healthy))))
+        actions = [sick_perm + healthy_perm
+                   for sick_perm in sick_permutations
                    for healthy_perm in healthy_permutations]
         return actions
 
@@ -65,30 +65,34 @@ class MedicalProblem(search.Problem):
         state = state_to_list(state)
 
         for action, (i, j) in actions:
-            if action == 'quarantine':
-                state[i][j] = ('Q', 2)
+            if action == Q_action:
+                state[i][j] = ('Q', 3)
 
-            elif action == 'vaccinate':
+            elif action == V_action:
                 state[i][j] = ('I', 0)
 
+        infect = []
         for i, row in enumerate(state):
             for j, value in enumerate(row):
                 if value[0] == 'S':
-                    for k, l in self.neighbors(i, j):
+                    for k, l in self.get_neighbors(i, j):
                         if state[k][l][0] == 'H':
-                            state[k][l] = ('S', 4)  # 4 since this is going to be demoted immediately
+                            infect.append((k, l))
+
+        for i, j in infect:
+            state[i][j] = ('S', 4)  # 4 since this is going to be demoted immediately
 
         for i, row in enumerate(state):
             for j, (value, days) in enumerate(row):
                 if value in ['S', 'Q']:
-                    if days == 0:
+                    if days == 1:
                         state[i][j] = ('H', 0)
                     else:
                         state[i][j] = (value, days - 1)
 
         return state_to_tuple(state)
 
-    def neighbors(self, i, j):
+    def get_neighbors(self, i, j):
         return [val for val in [(i - 1, j), (i + 1, j), (i, j - 1), (i, j + 1)] if self.in_board(*val)]
 
     def in_board(self, i, j):
@@ -109,9 +113,11 @@ class MedicalProblem(search.Problem):
         and returns a goal distance estimate"""
         h_score = 0
         state = node.state
-        counts = self.count_measures(state)
-        for count, weight in zip(counts, self.weights):
-            h_score += count * weight
+
+        for i, line in enumerate(state):
+            for j, (value, day) in enumerate(line):
+                if value == 'S':
+                    h_score += day
         return h_score
 
     def count_measures(self, state):
@@ -143,29 +149,27 @@ class MedicalProblem(search.Problem):
         return counts
 
     @staticmethod
-    def is_healthy(self, val):
+    def is_healthy(val):
         return val[0] == 'H'
 
     @staticmethod
-    def is_sick(self, val):
+    def is_sick(val):
         return val[0] == 'S'
 
-    def is_immune(self, val):
+    @staticmethod
+    def is_immune(val):
         return val[0] == 'I'
 
-    def is_quarantined(self, val):
+    @staticmethod
+    def is_quarantined(val):
         return val[0] == 'Q'
 
     def is_endangered(self, state, i, j):
-
         if state[i][j][0] == 'H':
-            for k, l in self.neighbors(i, j):
+            for k, l in self.get_neighbors(i, j):
                 if state[k][l][0] == 'S':
                     return True
         return False
-
-    """Feel free to add your own functions
-    (-2, -2, None) means there was a timeout"""
 
 
 def state_to_list(state):
@@ -176,5 +180,5 @@ def state_to_tuple(state):
     return tuple(tuple(row) for row in state)
 
 
-def create_medical_problem(game):  # TODO Delete weights
+def create_medical_problem(game):
     return MedicalProblem(game)
