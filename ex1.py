@@ -17,14 +17,12 @@ ENDANGERED = 7
 Q_action = 'quarantine'
 V_action = 'vaccinate'
 
-WEIGHTS = (0.9784128920597102, 0.3448961677553998, 0.37198598623470647, 0.9728597300324406, 0.2357129879381703,
-           0.34850306058598324, 0.6247811849752408, 0.06077653822142337)
 
 
 class MedicalProblem(search.Problem):
     """This class implements a medical problem according to problem description file"""
 
-    def __init__(self, initial, weights=WEIGHTS):  # TODO delete weights
+    def __init__(self, initial):
         """Don't forget to implement the goal test
         You should change the initial to your own representation.
         search.Problem.__init__(self, initial) creates the root node"""
@@ -35,7 +33,6 @@ class MedicalProblem(search.Problem):
                                for line in initial['map']])
         self.len = len(initial_state)
         self.width = len(initial_state[0])
-        self.weights = weights
         search.Problem.__init__(self, initial_state)
 
     def actions(self, state):
